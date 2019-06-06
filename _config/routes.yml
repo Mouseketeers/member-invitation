@@ -1,0 +1,7 @@
+---
+Name: memberinvitationroutes
+After: framework/routes#coreroutes
+---
+Director:
+  rules:
+    'invite//$Action/$ID': 'MemberInvitationController'
