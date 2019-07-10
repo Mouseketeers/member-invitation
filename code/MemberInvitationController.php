@@ -49,7 +49,8 @@ class MemberInvitationController extends Controller
 		}
 		if ($form->validate()) {
 
-			$member = Member::create(array('Email' => $invite->Email, 'Surname' => $invite->Surname));
+			$member = Member::create(array('Email' => $invite->Email));
+			$form->saveInto($member);
 
 			try {
 				if ($member->validate()) {
