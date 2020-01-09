@@ -3,8 +3,6 @@ class MemberInvitationAcceptForm extends Form
 {
 	public function __construct($controller, $name) {
 
-		$this->controller = $controller;
-			
 		$hash = $controller->getRequest()->param('ID');
 		$invite = MemberInvitation::get()->filter('TempHash', $hash)->first();
 
@@ -34,13 +32,13 @@ class MemberInvitationAcceptForm extends Form
 			HiddenField::create('Surname');
 		};
 		$actions = FieldList::create(
-			FormAction::create('saveInvite', _t('MemberInvitation.ACCEPTFORM_REGISTER', 'Register'))
+			FormAction::create('acceptInvite', _t('MemberInvitation.ACCEPTFORM_REGISTER', 'Register'))
 		);
 		$requiredFields = RequiredFields::create('FirstName');
-		$form = new FoundationForm($this, 'MemberInvitationAcceptForm', $fields, $actions, $requiredFields);
 		
 		Session::set('MemberInvitation.accepted', true);
-		$this->extend('updateForm', $form);	
+
+		$this->extend('updateAcceptForm', $fields, $actions, $required);	
 		
 		parent::__construct($controller, $name, $fields, $actions);
 	}

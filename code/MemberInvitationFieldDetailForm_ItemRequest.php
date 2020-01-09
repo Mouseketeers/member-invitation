@@ -5,7 +5,6 @@ class MemberInvitationFieldDetailForm_ItemRequest extends GridFieldDetailForm_It
 		'doSendInvitation',
 		'ItemEditForm'
 	);
-	// public function Breadcrumbs($unlinked = false)
 	function ItemEditForm()
 	{
 		$form = parent::ItemEditForm();
@@ -22,39 +21,16 @@ class MemberInvitationFieldDetailForm_ItemRequest extends GridFieldDetailForm_It
 		$now = SS_Datetime::now()->Rfc2822();
 		$this->record->DateSent = $now;
 		$this->doSave($data, $form);
-		
-		if($subsiteID = $this->record->SubsiteID) {
-			$subsite = Subsite::get()->byID($subsiteID);
-			$siteURL = 'http://'.$subsite->getPrimarySubsiteDomain()->Domain.'/';
-		}
-		else {
-			$siteURL = Director::absoluteBaseURL();
-		}
 
-		// enable theme to use custom template
-		Config::inst()->update('SSViewer', 'theme_enabled', true);
+        $invite = MemberInvitation::create();
+        $invite->DateSent = SS_Datetime::now()->Rfc2822();
+        $form->saveInto($invite);
 
-		Email::create()
-			->setFrom($this->record->FromEmail)
-			->setTo($this->record->Email)
-			->setSubject($this->record->EmailSubject)
-			->setTemplate(array('MemberInvitationEmail'))
-			->populateTemplate(
-				ArrayData::create(
-					array(
-						'FirstName' => $this->record->FirstName,
-						'Surname' => $this->record->Surname,
-						'Message' => $this->record->Message,
-						'SiteURL' => $siteURL,
-						'DaysToExpiry' => MemberInvitation::config()->get('days_to_expiry'),
-						'TempHash' => $this->record->TempHash
-					)
-				)
-			)
-			->send();
+        Config::inst()->update('SSViewer', 'theme_enabled', true);
 
-		// disable theme again so that it doesn't affect the CMS
-		Config::inst()->update('SSViewer', 'theme_enabled', false);
+        $invite->sendInvitation();
+
+        Config::inst()->update('SSViewer', 'theme_enabled', false);
 		
 		$controller = $this->getToplevelController();
 		 // Force a content refresh
