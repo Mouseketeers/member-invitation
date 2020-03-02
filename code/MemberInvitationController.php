@@ -1,5 +1,5 @@
 <?php
-class MemberInvitationController extends Page_Controller implements PermissionProvider
+class MemberInvitationController extends Controller implements PermissionProvider
 {
 
     private static $allowed_actions = array(
