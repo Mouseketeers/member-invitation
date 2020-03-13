@@ -3,34 +3,34 @@ class MemberInvitationForm extends Form
 {
 	public function __construct($controller, $name) {
 
-		$groups = array();
-
+		$groups = [];
+		$group_codes = [];
+		
 		$member_groups = Member::currentUser()->Groups();
+		$groups_config = MemberInvitation::config()->get('frontend_groups');
 		
-		$groupsConfig = MemberInvitation::config()->get('frontend_groups');
-		
-		if($groupsConfig) {
-			foreach ($groupsConfig as $config_group_code => $config_allowed_groups) {
-				foreach($member_groups as $member_group) {
-					if($member_group->Code == $config_group_code) {
-						foreach($config_allowed_groups as $config_allowed_group) {
-							$group = Group::get()->filter('Code', $config_allowed_group)->first();
-							if($group) {
-								$groups[$group->Code] = $group->Title;
-							}
+		if($groups_config) {
+			foreach ($groups_config as $config_group_code => $config_group_codes) {
+				if($config_group_codes) {
+					foreach($member_groups as $member_group) {
+						if($member_group->Code == $config_group_code) {
+							$group_codes = array_merge($group_codes, $config_group_codes);
 						}
 					}
 				}
 			}
+			if($group_codes) {
+				$groups = Group::get()->filter('Code', $group_codes);	
+			}
 		}
 		if(!$groups) {
-			$groups = $member_groups->map('Code', 'Title')->toArray();
+			$groups = $member_groups;
 		}
 		$fields = FieldList::create(
             TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name')),
             TextField::create('Surname', _t('MemmberInvitation.INVITE_SURNAME', 'Surname')),
             EmailField::create('Email', _t('MemmberInvitation.INVITE_EMAIL', 'Email')),
-            OptionsetField::create('Groups', _t('MemmberInvitation.INVITE_GROUP', 'Add to group'), $groups)
+            OptionsetField::create('Groups', _t('MemmberInvitation.INVITE_GROUP', 'Add to group'), $groups->map('Code', 'Title')->toArray())
         );
         $actions = FieldList::create(
             FormAction::create('sendInvite', _t('MemmberInvitation.SEND_INVITATION', 'Send Invitation'))

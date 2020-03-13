@@ -8,8 +8,10 @@ class MemberInvitationAcceptForm extends Form
 
 		$firstName = ($invite) ? $invite->FirstName : '';
 		$surname = ($invite) ? $invite->Surname : '';
+		$email = ($invite) ? $invite->Email : '';
 		
 		$fields = FieldList::create(
+			HiddenField::create('Email', 'Email', $email),
 			TextField::create(
 				'FirstName',
 				_t('MemberInvitation.ACCEPTFORM_FIRSTNAME', 'Name'),
@@ -27,19 +29,18 @@ class MemberInvitationAcceptForm extends Form
 				), 
 				'FirstName'
 			);
-		}
-		else {
-			HiddenField::create('Surname');
 		};
 		$actions = FieldList::create(
 			FormAction::create('acceptInvite', _t('MemberInvitation.ACCEPTFORM_REGISTER', 'Register'))
 		);
-		$requiredFields = RequiredFields::create('FirstName');
+		
+		$required = new RequiredFields('FirstName');
 		
 		Session::set('MemberInvitation.accepted', true);
-
-		$this->extend('updateAcceptForm', $fields, $actions, $required);	
 		
-		parent::__construct($controller, $name, $fields, $actions);
+		
+		$controller->extend('updateAcceptForm', $this, $fields, $actions, $required);
+		
+		parent::__construct($controller, $name, $fields, $actions, $required);
 	}
 }

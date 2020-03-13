@@ -22,19 +22,6 @@ class MemberInvitationController extends Controller implements PermissionProvide
             )
         );
     }
-//  public function init()
-//     {
-//         parent::init();
-//         if (!Member::currentUserID()) {
-//             $security = Injector::inst()->get(Security::class);
-//             $link = $security->Link('login');
-//             return $this->redirect(Controller::join_links(
-//                 $link,
-//                 "?BackURL={$this->Link('index')}"
-//             ));
-//         }
-//     }
-
     public function index()
     {
         if (!Permission::check('ACCESS_MEMBER_INVITATIONS')) {
@@ -130,6 +117,8 @@ class MemberInvitationController extends Controller implements PermissionProvide
         if ($form->validate()) {
 
             $member = Member::create(array('Email' => $invite->Email));
+
+
             $form->saveInto($member);
 
             try {
@@ -148,10 +137,11 @@ class MemberInvitationController extends Controller implements PermissionProvide
                 );
                 return $this->redirectBack();
             }
+            
             // $invite->delete();
             $invite->Accepted = true;
             $invite->write();
-
+            
             return $this->redirect($this->Link('success'));
         } else {
             $form->sessionMessage(
@@ -161,7 +151,6 @@ class MemberInvitationController extends Controller implements PermissionProvide
             return $this->redirectBack();
         }
     }
-
     public function success()
     {
         $security = Injector::inst()->get(Security::class);
@@ -170,7 +159,6 @@ class MemberInvitationController extends Controller implements PermissionProvide
             array('LoginLink' => $security->Link('login'))
         );
     }
-
     public function expired()
     {
         return $this->renderWith(array('MemberInvitation_expired', 'Page'));
@@ -190,14 +178,6 @@ class MemberInvitationController extends Controller implements PermissionProvide
     {
         return $this->redirect($this->Link('notfound'));
     }
-
-    /**
-     * Ensure that links for this controller use the customised route.
-     * Searches through the rules set up for the class and returns the first route.
-     *
-     * @param  string $action
-     * @return string
-     */
     public function Link($action = null)
     {
         if ($url = array_search(get_called_class(), (array)Config::inst()->get('Director', 'rules'))) {

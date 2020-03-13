@@ -208,9 +208,6 @@ class MemberInvitation extends DataObject
         else {
             $siteURL = Director::absoluteBaseURL();
         }
-
-
-        
         return Email::create()
             ->setFrom($this->FromEmail)
             ->setTo($this->Email)
