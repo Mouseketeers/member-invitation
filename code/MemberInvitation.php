@@ -240,6 +240,10 @@ class MemberInvitation extends DataObject
         }
         return $result;
     }
+    public function getIsAccepted()
+    {
+        return $this->Accepted;
+    }
 
     public function canCreate($member = null)
     {

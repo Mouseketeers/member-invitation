@@ -99,6 +99,11 @@ class MemberInvitationController extends Controller implements PermissionProvide
             if ($invite->getIsExpired()) {
                 return $this->redirect($this->Link('expired'));
             }
+            else {
+                if($invite->getIsAccepted()) {
+                     return $this->redirect($this->Link('notfound'));
+                }
+            }
         } else {
             return $this->redirect($this->Link('notfound'));
         }
