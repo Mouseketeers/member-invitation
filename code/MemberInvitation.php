@@ -129,6 +129,14 @@ class MemberInvitation extends DataObject
     {
         $fields = parent::getCMSFields();
 
+        if(!$this->InvitedByID) {
+            $this->InvitedByID = Member::currentUserID();
+        }
+        
+        if(!$this->TempHash) {
+            $this->TempHash = $this->generateTempHash();
+        }
+
         if(class_exists('Subsite')) {
             $fields->replaceField(
                 'SubsiteID',
@@ -170,15 +178,6 @@ class MemberInvitation extends DataObject
         return $fields;
     }
 
-    public function onBeforeWrite()
-    {
-        if (!$this->ID) {
-            $generator = new RandomGenerator();
-            $this->TempHash = $generator->randomToken('sha1');
-            $this->InvitedByID = Member::currentUserID();
-        }
-        parent::onBeforeWrite();
-    }
     public function validate() 
     {
         $valid = parent::validate();
@@ -226,6 +225,10 @@ class MemberInvitation extends DataObject
                 )
             )
             ->send();
+    }
+    public function generateTempHash() {
+        $generator = new RandomGenerator();
+        return $generator->randomToken('sha1');
     }
     public function getIsExpired()
     {
