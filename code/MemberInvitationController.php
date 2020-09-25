@@ -67,6 +67,16 @@ class MemberInvitationController extends Controller implements PermissionProvide
 
         $form->saveInto($invite);
 
+        // todo: avoid duplicating this logic
+
+        if(!$invite->InvitedByID) {
+            $invite->InvitedByID = Member::currentUserID();
+        }
+        
+        if(!$invite->TempHash) {
+            $invite->TempHash = $invite->generateTempHash();
+        }        
+
         try {
             $invite->write();
         } catch (ValidationException $e) {
