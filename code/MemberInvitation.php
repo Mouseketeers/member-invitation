@@ -16,13 +16,13 @@ class MemberInvitation extends DataObject
         'Message' => 'HTMLText',
         'Groups' => 'Text',
         'TempHash' => 'Varchar',
-        'SubsiteID' => 'Int',
         'DateSent' => 'SS_Datetime',
         'Accepted' => 'Boolean'
     );
 
     private static $has_one = array(
-        'InvitedBy' => 'Member'
+        'InvitedBy' => 'Member',
+        'Subsite' => 'Subsite'
     );
     
     private static $indexes = array(
@@ -129,6 +129,7 @@ class MemberInvitation extends DataObject
     {
         $fields = parent::getCMSFields();
 
+        // todo: avoid duplicating this logic
         if(!$this->InvitedByID) {
             $this->InvitedByID = Member::currentUserID();
         }
@@ -136,20 +137,8 @@ class MemberInvitation extends DataObject
         if(!$this->TempHash) {
             $this->TempHash = $this->generateTempHash();
         }
+        
 
-        if(class_exists('Subsite')) {
-            $fields->replaceField(
-                'SubsiteID',
-                DropdownField::create(
-                    'SubsiteID', 
-                    'Site', 
-                    Subsite::all_sites()->map('ID', 'Title')
-                )
-            );
-        }
-        else {
-            $fields->removeByName('SubsiteID');
-        }
 
         $groups = Group::get();
         $groupsMap = array();
@@ -168,13 +157,40 @@ class MemberInvitation extends DataObject
                 )
                 ->setTitle('Add to groups')
         );
-        $fields->dataFieldByName('DateSent')->setDisabled(true);
-        $fields->insertAfter(
+        if(class_exists('Subsite')) {
+            $subsites = Subsite::all_sites();
+            $fields->insertAfter(
+                DropdownField::create(
+                    'SubsiteID', 
+                    'Site', 
+                    $subsites->map('ID', 'Title')
+                ),
+                'Groups'
+            );
+        }
+        else {
+            $fields->removeByName('SubsiteID');
+        }
+        if($this->TempHash) {
+            if($this->SubsiteID) {
+                $siteURL = $this->subsite()->getPrimarySubsiteDomain()->absoluteBaseURL();
+            }
+            else {
+               $siteURL = Director::absoluteBaseURL(); 
+            }
+            $fields->insertBefore(
+               ReadonlyField::create('AcceptLink', 'Accept Link', $siteURL.'invite/accept/'.$this->TempHash)->setRightTitle('Link sent in invitation. You can also copy this and send it in an email of your own (e.g. if a person complains that they haven\'t received the invitation).')
+               , 'DateSent'
+            );            
+        }
+        $fields->insertBefore(
            ReadonlyField::create('InvitedByReadOnlyField', 'Invited By', $this->InvitedBy()->getTitle()), 'DateSent'
-        );
+        );        
+        $fields->dataFieldByName('DateSent')->setReadonly(true);
         $fields->replaceField('TempHash', HiddenField::create('TempHash', 'TempHash'));
         $fields->replaceField('Accepted', HiddenField::create('Accepted', 'Accepted'));
         $fields->replaceField('InvitedByID', HiddenField::create('InvitedByID', 'InvitedByID'));
+
         return $fields;
     }
 
@@ -197,7 +213,6 @@ class MemberInvitation extends DataObject
         }
         return $valid;
     }
-
     public function sendInvitation()
     {
         if($subsiteID = $this->SubsiteID) {
@@ -206,7 +221,7 @@ class MemberInvitation extends DataObject
         }
         else {
             $siteURL = Director::absoluteBaseURL();
-        }
+        }        
         return Email::create()
             ->setFrom($this->FromEmail)
             ->setTo($this->Email)
@@ -229,17 +244,20 @@ class MemberInvitation extends DataObject
     public function generateTempHash() {
         $generator = new RandomGenerator();
         return $generator->randomToken('sha1');
-    }
+    }    
     public function getIsExpired()
     {
-        return false;
         $result = false;
+
         $days = self::config()->get('days_to_expiry');
-        $time = SS_Datetime::now()->Format('U');
-        $ago = abs($time - strtotime($this->Created));
-        $rounded = round($ago / 86400);
-        if ($rounded > $days) {
-            $result = true;
+
+        if($days) {
+            $time = SS_Datetime::now()->Format('U');
+            $ago = abs($time - strtotime($this->Created));
+            $rounded = round($ago / 86400);
+            if ($rounded > $days) {
+                $result = true;
+            }            
         }
         return $result;
     }
