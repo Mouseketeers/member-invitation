@@ -6,6 +6,7 @@ class MemberInvitationController extends Controller implements PermissionProvide
         'index',
         'accept',
         'success',
+        'accepted',
         'expired',
         'notfound',
         'sendInvite',
@@ -111,7 +112,7 @@ class MemberInvitationController extends Controller implements PermissionProvide
             }
             else {
                 if($invite->getIsAccepted()) {
-                     return $this->redirect($this->Link('notfound'));
+                     return $this->redirect($this->Link('accepted'));
                 }
             }
         } else {
@@ -178,11 +179,18 @@ class MemberInvitationController extends Controller implements PermissionProvide
     {
         return $this->renderWith(array('MemberInvitation_expired', 'Page'));
     }
-
+    public function accepted()
+    {
+        $security = Injector::inst()->get(Security::class);
+        return $this->renderWith(
+            array('MemberInvitation_accepted', 'Page'),
+            array('LoginLink' => $security->Link('login'))
+        );        
+    }    
     public function notfound()
     {
         return $this->renderWith(array('MemberInvitation_notfound', 'Page'));
-    }
+    }    
 
     private function forbiddenError()
     {
