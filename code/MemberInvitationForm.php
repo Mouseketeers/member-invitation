@@ -26,6 +26,7 @@ class MemberInvitationForm extends Form
 		if(!$groups) {
 			$groups = $member_groups;
 		}
+		$groups = $groups->sort('Title');
 		$fields = FieldList::create(
             TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name')),
             TextField::create('Surname', _t('MemmberInvitation.INVITE_SURNAME', 'Surname')),

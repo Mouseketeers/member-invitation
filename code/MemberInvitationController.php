@@ -28,7 +28,11 @@ class MemberInvitationController extends Controller implements PermissionProvide
         if (!Permission::check('ACCESS_MEMBER_INVITATIONS')) {
             return Security::permissionFailure();
         } else {
-            return $this->renderWith(array('MemberInvitation', 'Page'));
+            $responseController = $this->getResponseController();
+            return $responseController->renderWith(
+                array('MemberInvitation', 'MemberInvitation','Page', 'BlankPage'),
+                array('InvitationForm' => $this->InvitationForm())
+            );              
         }
     }
 
@@ -118,13 +122,16 @@ class MemberInvitationController extends Controller implements PermissionProvide
         } else {
             return $this->redirect($this->Link('notfound'));
         }
-        return $this->renderWith(array('MemberInvitation_accept', 'Page'), array('Invite' => $invite));
+        $responseController = $this->getResponseController();
+        return $responseController->renderWith(
+            $this->getTemplatesFor('accept'),
+            array('Invite' => $invite, 'AcceptForm' => $this->AcceptForm())
+        );
     }
 
     public function AcceptForm() {
         return MemberInvitationAcceptForm::create($this, 'AcceptForm');
     }
-
     public function acceptInvite($data, Form $form)
     {
         if (!$invite = MemberInvitation::get()->filter('TempHash', $data['HashID'])->first()) {
@@ -170,28 +177,35 @@ class MemberInvitationController extends Controller implements PermissionProvide
     public function success()
     {
         $security = Injector::inst()->get(Security::class);
-        return $this->renderWith(
-            array('MemberInvitation_success', 'Page'),
+        $responseController = $this->getResponseController();
+        return $responseController->renderWith(
+            $this->getTemplatesFor('success'),
             array('LoginLink' => $security->Link('login'))
         );
     }
     public function expired()
     {
-        return $this->renderWith(array('MemberInvitation_expired', 'Page'));
+        $responseController = $this->getResponseController();
+        return $responseController->renderWith(
+            $this->getTemplatesFor('expired')
+        );
     }
     public function accepted()
     {
         $security = Injector::inst()->get(Security::class);
+        $responseController = $this->getResponseController();
         return $this->renderWith(
-            array('MemberInvitation_accepted', 'Page'),
+            $this->getTemplatesFor('accepted'),
             array('LoginLink' => $security->Link('login'))
-        );        
+        );
     }    
     public function notfound()
     {
-        return $this->renderWith(array('MemberInvitation_notfound', 'Page'));
+        $responseController = $this->getResponseController();
+        return $this->renderWith(
+            $this->getTemplatesFor('notfound')
+        );
     }    
-
     private function forbiddenError()
     {
         return $this->httpError(403, _t('MemberInvitation.403_NOTICE', 'You must be logged in to access this page.'));
@@ -211,4 +225,18 @@ class MemberInvitationController extends Controller implements PermissionProvide
             return $this->join_links($url, $action);
         }
     }
+    protected function getResponseController() {
+        if(!class_exists('SiteTree')) return $this;
+        $tmpPage = new Page();
+        $tmpPage->URLSegment = "invite";
+        // Disable ID-based caching  of the log-in page by making it a random number
+        $tmpPage->ID = -1 * rand(1,10000000);
+        $controller = Page_Controller::create($tmpPage);
+        $controller->setDataModel($this->model);
+        $controller->init();
+        return $controller;
+    }    
+    public function getTemplatesFor($action) {
+        return array("MemberInvitation_{$action}", 'MemberInvitation','Page', 'BlankPage');
+    }    
 }
