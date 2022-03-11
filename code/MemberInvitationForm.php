@@ -20,7 +20,7 @@ class MemberInvitationForm extends Form
 				}
 			}
 			if($group_codes) {
-				$groups = Group::get()->filter('Code', $group_codes)->sort('Title');
+				$groups = Group::get()->filter('Code', $group_codes)->sort('Title');			
 			}
 		}
 		$group_count = $groups->count();
