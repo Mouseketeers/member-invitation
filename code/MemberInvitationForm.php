@@ -6,9 +6,9 @@ class MemberInvitationForm extends Form
 		$groups = [];
 		$group_codes = [];
 		
-		$member_groups = Member::currentUser()->Groups();
+		$member_groups = Member::currentUser()->Groups()->sort('Title');
 		$groups_config = MemberInvitation::config()->get('frontend_groups');
-		
+        
 		if($groups_config) {
 			foreach ($groups_config as $config_group_code => $config_group_codes) {
 				if($config_group_codes) {
@@ -20,23 +20,38 @@ class MemberInvitationForm extends Form
 				}
 			}
 			if($group_codes) {
-				$groups = Group::get()->filter('Code', $group_codes);	
+				$groups = Group::get()->filter('Code', $group_codes)->sort('Title');			
 			}
 		}
-		if(!$groups) {
-			$groups = $member_groups;
-		}
-		$groups = $groups->sort('Title');
-		$fields = FieldList::create(
-            TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name')),
-            TextField::create('Surname', _t('MemmberInvitation.INVITE_SURNAME', 'Surname')),
-            EmailField::create('Email', _t('MemmberInvitation.INVITE_EMAIL', 'Email')),
-            OptionsetField::create('Groups', _t('MemmberInvitation.INVITE_GROUP', 'Add to group'), $groups->map('Code', 'Title')->toArray())
-        );
-        $actions = FieldList::create(
-            FormAction::create('sendInvite', _t('MemmberInvitation.SEND_INVITATION', 'Send Invitation'))
-        );
-		$required = RequiredFields::create(array('FirstName', 'Email', 'Groups'));
+		
+		if($groups->exists()) {
+			$fields = FieldList::create(
+	            TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name'))->setDisabled(true),
+	            TextField::create('Surname', _t('MemmberInvitation.INVITE_SURNAME', 'Surname')),
+	            EmailField::create('Email', _t('MemmberInvitation.INVITE_EMAIL', 'Email')),
+				OptionsetField::create(
+					'Groups',
+					_t('MemmberInvitation.INVITE_GROUP', 'Add to group'),
+					$groups->map('Code', 'Title')->toArray(), 
+					$groups->first()->Code
+				)
+			);
+	        $actions = FieldList::create(
+	            FormAction::create('sendInvite', _t('MemmberInvitation.SEND_INVITATION', 'Send Invitation'))->setDisabled(true)
+	        );
+			$required = RequiredFields::create(array('FirstName', 'Email', 'Groups'));			
+	    }
+        else {
+        	$actions = new FieldList();
+        	$fields = new FieldList();
+			$this->setMessage(
+                _t(
+                    'MemberInvitation.PERMISSION_FAILURE',
+                    "You don't have permission to send user invitations"
+                ),
+                'warning'
+            );
+        }
 
 		$this->extend('updateMemberInvitationForm', $fields, $actions, $required);
 		
