@@ -21,19 +21,9 @@ class MemberInvitationForm extends Form
 			}
 			if($group_codes) {
 				$groups = Group::get()->filter('Code', $group_codes)->sort('Title');
-				// if on a subsite only show groups that have access to the current site
-				// if(class_exists('Subsite') && $current_subsite_id = Subsite::currentSubsiteID()) {
-				// 	$groups->filter('SubsiteID', $current_subsite_id)->leftJoin("Group_Subsites", "\"Group_Subsites\".\"GroupID\" = \"Group\".\"ID\"");
-				// }
 			}
 		}
-		// if(!$groups->exists()) {
-		// 	$groups = $member_groups;
-		// }
-
-
 		$group_count = $groups->count();
-
 		if($group_count) {
 			$fields = FieldList::create(
 	            TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name'))->setDisabled(true),
@@ -69,9 +59,6 @@ class MemberInvitationForm extends Form
 			);
 			$actions = FieldList::create();
 		}
-
-
-
 
 		$this->extend('updateMemberInvitationForm', $fields, $actions, $required);
 		

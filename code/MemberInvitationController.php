@@ -35,7 +35,6 @@ class MemberInvitationController extends Controller implements PermissionProvide
             );              
         }
     }
-
     public function InvitationForm()
     {
         return MemberInvitationForm::create($this, 'InvitationForm');
