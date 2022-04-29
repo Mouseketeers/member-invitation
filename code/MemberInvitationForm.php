@@ -26,7 +26,7 @@ class MemberInvitationForm extends Form
 		
 		if($groups->exists()) {
 			$fields = FieldList::create(
-	            TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name'))->setDisabled(true),
+	            TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name')),
 	            TextField::create('Surname', _t('MemmberInvitation.INVITE_SURNAME', 'Surname')),
 	            EmailField::create('Email', _t('MemmberInvitation.INVITE_EMAIL', 'Email')),
 				OptionsetField::create(
@@ -37,7 +37,7 @@ class MemberInvitationForm extends Form
 				)
 			);
 	        $actions = FieldList::create(
-	            FormAction::create('sendInvite', _t('MemmberInvitation.SEND_INVITATION', 'Send Invitation'))->setDisabled(true)
+	            FormAction::create('sendInvite', _t('MemmberInvitation.SEND_INVITATION', 'Send Invitation'))
 	        );
 			$required = RequiredFields::create(array('FirstName', 'Email', 'Groups'));			
 	    }
