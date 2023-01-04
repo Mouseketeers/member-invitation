@@ -218,10 +218,13 @@ class MemberInvitation extends DataObject
         if($subsiteID = $this->SubsiteID) {
             $subsite = Subsite::get()->byID($subsiteID);
             $siteURL = 'http://'.$subsite->getPrimarySubsiteDomain()->Domain.'/';
+            if ($theme = $subsite->Theme) {
+                SSViewer::set_theme($theme);
+            }
         }
         else {
             $siteURL = Director::absoluteBaseURL();
-        }        
+        }       
         return Email::create()
             ->setFrom($this->FromEmail)
             ->setTo($this->Email)
