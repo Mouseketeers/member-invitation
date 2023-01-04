@@ -20,16 +20,14 @@ class MemberInvitationAcceptForm extends Form
 			ConfirmedPasswordField::create('Password'),
 			HiddenField::create('HashID')->setValue($hash)
 		);
-		if($surname) {
-			$fields->insertAfter(
-				TextField::create(
-					'Surname',
-					_t('MemberInvitation.ACCEPTFORM_SURNAME', 'Surname'),
-					$surname
-				), 
-				'FirstName'
-			);
-		};
+		$fields->insertAfter(
+			TextField::create(
+				'Surname',
+				_t('MemberInvitation.ACCEPTFORM_SURNAME', 'Surname'),
+				$surname
+			), 
+			'FirstName'
+		);
 		$actions = FieldList::create(
 			FormAction::create('acceptInvite', _t('MemberInvitation.ACCEPTFORM_REGISTER', 'Register'))
 		);
@@ -38,8 +36,7 @@ class MemberInvitationAcceptForm extends Form
 		
 		Session::set('MemberInvitation.accepted', true);
 		
-		
-		$controller->extend('updateAcceptForm', $this, $fields, $actions, $required);
+		$controller->extend('updateAcceptForm', $this, $fields, $actions, $required, $invite);
 		
 		parent::__construct($controller, $name, $fields, $actions, $required);
 	}
