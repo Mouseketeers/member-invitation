@@ -141,8 +141,9 @@ class MemberInvitationController extends Controller implements PermissionProvide
 
             $member = Member::create(array('Email' => $invite->Email));
 
-
             $form->saveInto($member);
+
+            $this->extend('updateAcceptInvite', $this, $data, $form, $invite, $member);
 
             try {
                 if ($member->validate()) {
@@ -151,7 +152,6 @@ class MemberInvitationController extends Controller implements PermissionProvide
                     foreach ($groups as $groupCode) {
                         $member->addToGroupByCode($groupCode);
                     }
-
                 }
             } catch (ValidationException $e) {
                 $form->sessionMessage(
@@ -160,12 +160,12 @@ class MemberInvitationController extends Controller implements PermissionProvide
                 );
                 return $this->redirectBack();
             }
-            
             // $invite->delete();
             $invite->Accepted = true;
             $invite->write();
             
             return $this->redirect($this->Link('success'));
+            
         } else {
             $form->sessionMessage(
                 Convert::array2json($form->getValidator()->getErrors()),
