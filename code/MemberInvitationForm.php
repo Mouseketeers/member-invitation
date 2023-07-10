@@ -29,6 +29,7 @@ class MemberInvitationForm extends Form
 	            TextField::create('FirstName', _t('MemmberInvitation.INVITE_FIRSTNAME', 'First name')),
 	            TextField::create('Surname', _t('MemmberInvitation.INVITE_SURNAME', 'Surname')),
 	            EmailField::create('Email', _t('MemmberInvitation.INVITE_EMAIL', 'Email')),
+	            TextareaField::create('Message', _t('MemmberInvitation.INVITE_MESSAGE', 'Message'), 'You have been invited to join '.SiteConfig::current_site_config()->Title . '.'),
 				OptionsetField::create(
 					'Groups',
 					_t('MemmberInvitation.INVITE_GROUP', 'Add to group'),

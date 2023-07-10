@@ -139,8 +139,6 @@ class MemberInvitation extends DataObject
             $this->TempHash = $this->generateTempHash();
         }
         
-
-
         $groups = Group::get();
         $groupsMap = array();
         foreach ($groups as $group) {
@@ -219,7 +217,7 @@ class MemberInvitation extends DataObject
         if($subsiteID = $this->SubsiteID) {
             $subsite = Subsite::get()->byID($subsiteID);
             $siteURL = 'http://'.$subsite->getPrimarySubsiteDomain()->Domain.'/';
-            if ($theme = $subsite->Theme) {
+            if($theme = $subsite->Theme) {
                 SSViewer::set_theme($theme);
             }
         }
