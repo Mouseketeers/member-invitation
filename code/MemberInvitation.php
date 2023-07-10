@@ -42,7 +42,6 @@ class MemberInvitation extends DataObject
 
     public function populateDefaults()
     {
-        parent::populateDefaults();
 
         $defaultFromEmail = self::config()->get('default_from_email');
         $this->FromEmail = ($defaultFromEmail) ? $defaultFromEmail :  Member::currentUser()->Email;
@@ -60,6 +59,8 @@ class MemberInvitation extends DataObject
         if($defaultGroups = self::config()->get('default_groups')) {
             $this->Groups = $defaultGroups;
         }
+
+        parent::populateDefaults();
 
     }
     public function setEmailSubject($emailSubject)
