@@ -5,22 +5,20 @@ class MemberInvitationForm extends Form
 
 		$groups = [];
 		$group_codes = [];
+
+
+		$member = Member::currentUser();
 		
-		$member_groups = Member::currentUser()->Groups()->sort('Title');
 		$groups_config = MemberInvitation::config()->get('frontend_groups');
         
 		if($groups_config) {
 			foreach ($groups_config as $config_group_code => $config_group_codes) {
-				if($config_group_codes) {
-					foreach($member_groups as $member_group) {
-						if($member_group->Code == $config_group_code) {
-							$group_codes = array_merge($group_codes, $config_group_codes);
-						}
-					}
+				if($member->inGroup($config_group_code)) {
+					$group_codes = array_merge($group_codes, $config_group_codes);
 				}
 			}
 			if($group_codes) {
-				$groups = Group::get()->filter('Code', $group_codes)->sort('Title');			
+				$groups = Group::get()->filter('Code', $group_codes)->sort('Title');
 			}
 		}
 		
