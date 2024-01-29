@@ -1,7 +1,7 @@
 {
     "name": "mouseketeers/member-invitation",
     "description": "A SilverStripe module to handle user invitations in SilverStripe CMS",
-    "type": "silverstripe-module",
+    "type": "silverstripe-vendormodule",
     "keywords": [
         "silverstripe",
         "invitation"
@@ -14,7 +14,20 @@
         }
     ],
     "require": {
-        "silverstripe/framework": "^3.6"
+        "silverstripe/vendor-plugin": "^1",
+        "silverstripe/framework": "^4"
     },
-    "minimum-stability": "stable"
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Mouseketeers\\SilverstripeMemberInvitation\\": "src/"
+        }
+    },
+    "extra": {
+        "installer-name": "member-invitation"
+    }
 }
+
+
+
+

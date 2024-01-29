@@ -1,11 +1,22 @@
 <?php
+
+namespace Mouseketeers\SilverstripeMemberInvitation;
+
+use SilverStripe\Core\Extension;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
+use Mouseketeers\SilverstripeMemberInvitation\MemberInvitationFieldDetailForm_ItemRequest;
+
+use SilverStripe\Forms\GridField\GridFieldPrintButton;
+
+
 class MemberInvitationSecurityAdminExtension extends Extension 
 {
-    public function updateEditForm(&$form) {
+    public function updateEditForm($form) {
         $fields = $form->Fields();
         $invitationsTab = $fields->findOrMakeTab('Root.Invitations', 'Invitations');
         $invitationsField = GridField::create('MemberInvitations',
-            false,
+            '',
             MemberInvitation::get(),
             GridFieldConfig_RecordEditor::create()
         );
@@ -13,10 +24,9 @@ class MemberInvitationSecurityAdminExtension extends Extension
 
         $invitationsField
             ->getConfig()
-            ->getComponentByType('GridFieldDetailForm')
-            ->setItemRequestClass('MemberInvitationFieldDetailForm_ItemRequest');
+            ->getComponentByType('SilverStripe\Forms\GridField\GridFieldDetailForm')
+            ->setItemRequestClass(MemberInvitationFieldDetailForm_ItemRequest::class);
 
-        // to prevent "Call to a member function FormAction() on null" on FormField->Link() 
         $invitationsField->setForm($form);
     }
 }
