@@ -1,42 +1,44 @@
 <?php
+
+namespace Mouseketeers\SilverstripeMemberInvitation;
+
+use SilverStripe\Forms\GridField\GridFieldDetailForm_ItemRequest;
+use SilverStripe\Forms\FormAction;
+use SilverStripe\ORM\FieldType\DBDatetime;
+
 class MemberInvitationFieldDetailForm_ItemRequest extends GridFieldDetailForm_ItemRequest
 {
-	public static $allowed_actions = array (
+	private static $allowed_actions = [
 		'doSendInvitation',
 		'ItemEditForm'
-	);
+	];
 	function ItemEditForm()
 	{
 		$form = parent::ItemEditForm();
 		$formActions = $form->Actions();
 		$button = FormAction::create('doSendInvitation');
-		$button->setTitle('Send Invitation');
-		$formActions->push($button);
+		$button->setTitle('Save and Send Invitation')
+			->setUseButtonTag(true)
+			->addExtraClass('btn-outline-primary font-icon-tick');
+		$formActions->insertAfter('action_doSave', $button);
 		$form->setActions($formActions);
 		return $form;
 	}
 
 	public function doSendInvitation($data, $form) {
 
-		$now = SS_Datetime::now()->Rfc2822();
-		$this->record->DateSent = $now;
+		// first save any changes
+		$this->record->DateSent = DBDatetime::now()->Rfc2822();
 		$this->doSave($data, $form);
 
+        // send invitation
         $invite = MemberInvitation::create();
-        $invite->DateSent = SS_Datetime::now()->Rfc2822();
         $form->saveInto($invite);
-
-        Config::inst()->update('SSViewer', 'theme_enabled', true);
-
         $invite->sendInvitation();
+        
+        $form->sessionMessage('Invitation has been sent', 'good');
 
-        Config::inst()->update('SSViewer', 'theme_enabled', false);
-		
-		$controller = $this->getToplevelController();
-		 // Force a content refresh
-		$controller->getRequest()->addHeader('X-Pjax', 'Content');
-		//redirect back to admin section
-		$backLink = $this->getBacklink();
-		return $controller->redirect($backLink, 302); 
+        return $this->redirectAfterSave(false);
+
 	} 
 }

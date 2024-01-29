@@ -1,7 +1,6 @@
 ---
 Name: userinvitationconfig
 ---
-SecurityAdmin:
+SilverStripe\Admin\SecurityAdmin:
   extensions:
-    - MemberInvitationSecurityAdminExtension
-
+    - Mouseketeers\SilverstripeMemberInvitation\MemberInvitationSecurityAdminExtension
