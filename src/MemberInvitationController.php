@@ -1,8 +1,32 @@
 <?php
+
+namespace Mouseketeers\SilverstripeMemberInvitation;
+
+use SilverStripe\Control\Controller;
+use SilverStripe\Security\PermissionProvider;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\Security;
+use SilverStripe\Forms\Form;
+use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\Security\Member;
+use SilverStripe\ORM\ValidationException;
+use SilverStripe\Core\Convert;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\CMS\Model\SiteTree;
+use SilverStripe\CMS\Controllers\ContentController;
+use Mouseketeers\SilverstripeMemberInvitation\MemberInvitation;
+use Mouseketeers\SilverstripeMemberInvitation\MemberInvitationForm;
+use SilverStripe\Security\Group;
+
+
+
+
 class MemberInvitationController extends Controller implements PermissionProvider
 {
 
-    private static $allowed_actions = array(
+    private static $url_segment = 'invite';
+
+    private static $allowed_actions = [
         'index',
         'accept',
         'success',
@@ -12,27 +36,52 @@ class MemberInvitationController extends Controller implements PermissionProvide
         'sendInvite',
         'AcceptForm',
         'InvitationForm'
-    );
+    ];
 
     public function providePermissions()
     {
-        return array(
-            'ACCESS_MEMBER_INVITATIONS' => array(
-                'name' => _t('MemberInvitationController.ACCESS_PERMISSIONS', 'Allow sending user invitations'),
-                'category' => _t('MemberInvitationController.CMS_ACCESS_CATEGORY', 'Invitations')
-            )
-        );
+        return [
+            'ACCESS_MEMBER_INVITATIONS' => [
+                'name' => _t(
+                    'MemberInvitationController.ACCESS_PERMISSIONS',
+                    'Allow sending member invitations'
+                ),
+                'category' => _t(
+                    'MemberInvitationController.CMS_ACCESS_CATEGORY',
+                    'Member Invitations'
+                )
+            ]
+            
+        ];
     }
+    public function init()
+    {
+        parent::init();
+
+        if (!Security::getCurrentUser()) 
+        {
+            $action = $this->getRequest()->param('Action');
+            if(!$action || $action === 'index' || $action === 'InvitationForm')
+            {
+                $security = Injector::inst()->get(Security::class);
+                $link = $security->Link('login');
+                return $this->redirect(Controller::join_links(
+                    $link,
+                    "?BackURL={$this->Link('index')}"
+                ));
+            }
+        }
+    }
+
     public function index()
     {
         if (!Permission::check('ACCESS_MEMBER_INVITATIONS')) {
             return Security::permissionFailure();
         } else {
-            $responseController = $this->getResponseController();
-            return $responseController->renderWith(
-                array('MemberInvitation', 'MemberInvitation','Page', 'BlankPage'),
-                array('InvitationForm' => $this->InvitationForm())
-            );              
+            return $this->renderWith(
+                ['MemberInvitation', SiteTree::class],
+                ['InvitationForm' => $this->InvitationForm()]
+            );
         }
     }
 
@@ -40,7 +89,7 @@ class MemberInvitationController extends Controller implements PermissionProvide
     {
         return MemberInvitationForm::create($this, 'InvitationForm');
     }
-    
+
     public function sendInvite($data, Form $form)
     {
 
@@ -55,12 +104,12 @@ class MemberInvitationController extends Controller implements PermissionProvide
             return $this->redirectBack();
         }
 
-        if (!$form->validate()) {
+        if (!$form->validationResult()->isValid()) {
             $form->sessionMessage(
                 _t(
                     'MemberInvitation.SENT_INVITATION_VALIDATION_FAILED',
                     'At least one error occured while trying to save your invite: {error}',
-                    array('error' => $form->getValidator()->getErrors()[0]['fieldName'])
+                    ['error' => $form->getValidator()->getErrors()[0]['fieldName']]
                 ),
                 'bad'
             );
@@ -68,14 +117,13 @@ class MemberInvitationController extends Controller implements PermissionProvide
         }
 
         $invite = MemberInvitation::create();
-        $invite->DateSent = SS_Datetime::now()->Rfc2822();
+        $invite->DateSent = DBDatetime::now()->Rfc2822();
 
         $form->saveInto($invite);
 
-        // todo: avoid duplicating this logic
-
         if(!$invite->InvitedByID) {
-            $invite->InvitedByID = Member::currentUserID();
+            $currentUser = Security::getCurrentUser();
+            $invite->InvitedByID = $currentUser ? $currentUser->ID : null;
         }
         
         if(!$invite->TempHash) {
@@ -98,7 +146,7 @@ class MemberInvitationController extends Controller implements PermissionProvide
             _t(
                 'MemberInvitation.SENT_INVITATION',
                 'An invitation was sent to {email}.',
-                array('email' => $data['Email'])
+                ['email' => $data['Email']]
             ),
             'good'
         );
@@ -122,35 +170,32 @@ class MemberInvitationController extends Controller implements PermissionProvide
         } else {
             return $this->redirect($this->Link('notfound'));
         }
-        $responseController = $this->getResponseController();
-        return $responseController->renderWith(
-            $this->getTemplatesFor('accept'),
-            array('Invite' => $invite, 'AcceptForm' => $this->AcceptForm())
+        return $this->renderWith(
+            ['MemberInvitation_accept', SiteTree::class]
         );
     }
-
-    public function AcceptForm() {
+    public function AcceptForm()
+    {
         return MemberInvitationAcceptForm::create($this, 'AcceptForm');
     }
-    public function acceptInvite($data, Form $form)
+    public function saveInvite($data, Form $form)
     {
-        if (!$invite = MemberInvitation::get()->filter('TempHash', $data['HashID'])->first()) {
+        if (!$invite = MemberInvitation::get()->filter(
+            'TempHash',
+            $data['HashID']
+        )->first()) {
             return $this->notFoundError();
         }
-        if ($form->validate()) {
-
-            $member = Member::create(array('Email' => $invite->Email));
-
+        if ($form->validationResult()->isValid()) {
+            $member = Member::create(['Email' => $invite->Email]);
             $form->saveInto($member);
-
-            $this->extend('updateAcceptInvite', $this, $data, $form, $invite, $member);
-
             try {
                 if ($member->validate()) {
                     $member->write();
+                    // Add user group info
                     $groups = explode(',', $invite->Groups);
-                    foreach ($groups as $groupCode) {
-                        $member->addToGroupByCode($groupCode);
+                    foreach (Group::get()->filter(['Code' => $groups]) as $group) {
+                        $group->Members()->add($member);
                     }
                 }
             } catch (ValidationException $e) {
@@ -160,12 +205,9 @@ class MemberInvitationController extends Controller implements PermissionProvide
                 );
                 return $this->redirectBack();
             }
-            // $invite->delete();
-            $invite->Accepted = true;
-            $invite->write();
-            
+            // Delete invitation
+            $invite->delete();
             return $this->redirect($this->Link('success'));
-            
         } else {
             $form->sessionMessage(
                 Convert::array2json($form->getValidator()->getErrors()),
@@ -177,33 +219,29 @@ class MemberInvitationController extends Controller implements PermissionProvide
     public function success()
     {
         $security = Injector::inst()->get(Security::class);
-        $responseController = $this->getResponseController();
-        return $responseController->renderWith(
-            $this->getTemplatesFor('success'),
-            array('LoginLink' => $security->Link('login'))
+        return $this->renderWith(
+            ['MemberInvitation_success', SiteTree::class],
+            ['LoginLink' => $security->Link('login')]
         );
     }
     public function expired()
     {
-        $responseController = $this->getResponseController();
-        return $responseController->renderWith(
-            $this->getTemplatesFor('expired')
+        return $this->renderWith(
+            ['MemberInvitation_expired', SiteTree::class]
         );
     }
     public function accepted()
     {
         $security = Injector::inst()->get(Security::class);
-        $responseController = $this->getResponseController();
         return $this->renderWith(
-            $this->getTemplatesFor('accepted'),
-            array('LoginLink' => $security->Link('login'))
+            ['MemberInvitation_accepted', SiteTree::class],
+            ['LoginLink' => $security->Link('login')]
         );
     }    
     public function notfound()
     {
-        $responseController = $this->getResponseController();
         return $this->renderWith(
-            $this->getTemplatesFor('notfound')
+            ['MemberInvitation_notfound', SiteTree::class]
         );
     }    
     private function forbiddenError()
@@ -215,28 +253,18 @@ class MemberInvitationController extends Controller implements PermissionProvide
     {
         return $this->redirect($this->Link('notfound'));
     }
-    public function Link($action = null)
-    {
-        if ($url = array_search(get_called_class(), (array)Config::inst()->get('Director', 'rules'))) {
-            // Check for slashes and drop them
-            if ($indexOf = stripos($url, '/')) {
-                $url = substr($url, 0, $indexOf);
-            }
-            return $this->join_links($url, $action);
-        }
-    }
     protected function getResponseController() {
-        if(!class_exists('SiteTree')) return $this;
-        $tmpPage = new Page();
+        if(!class_exists(SiteTree::class)) return $this;
+        $tmpPage = SiteTree::create();
         $tmpPage->URLSegment = "invite";
         // Disable ID-based caching  of the log-in page by making it a random number
         $tmpPage->ID = -1 * rand(1,10000000);
-        $controller = Page_Controller::create($tmpPage);
+        $controller = ContentController::create($tmpPage);
         $controller->setDataModel($this->model);
         $controller->init();
         return $controller;
     }    
     public function getTemplatesFor($action) {
-        return array("MemberInvitation_{$action}", 'MemberInvitation','Page', 'BlankPage');
+        return ["MemberInvitation_{$action}", MemberInvitation::class, SiteTree::class, 'BlankPage'];
     }    
 }
