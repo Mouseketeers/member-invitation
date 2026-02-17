@@ -62,7 +62,25 @@ class MemberInvitation extends DataObject
 
         parent::populateDefaults();
 
+    }   
+    public function canEdit($member = null)
+    {
+        if (!$member) {
+            $member = Member::currentUser();
+        }
+        if (Permission::checkMember($member, "ADMIN") || Permission::checkMember($member, "CMS_ACCESS_SecurityAdmin")) {
+            return true;
+        }
+        return false;
     }
+    public function canView($member = null)
+    {
+        return $this->canEdit($member);
+    } 
+    public function canDelete($member = null)
+    {
+        return $this->canEdit($member);
+    }  
     public function setEmailSubject($emailSubject)
     {
         if($emailSubject) 
