@@ -17,26 +17,29 @@ class MemberInvitationFieldDetailForm_ItemRequest extends GridFieldDetailForm_It
 	}
 
 	public function doSendInvitation($data, $form) {
-
-		$now = SS_Datetime::now()->Rfc2822();
-		$this->record->DateSent = $now;
-		$this->doSave($data, $form);
-
-        $invite = MemberInvitation::create();
-        $invite->DateSent = SS_Datetime::now()->Rfc2822();
-        $form->saveInto($invite);
-
-        Config::inst()->update('SSViewer', 'theme_enabled', true);
-
-        $invite->sendInvitation();
-
-        Config::inst()->update('SSViewer', 'theme_enabled', false);
+		// Populate the record with form data
+		$form->saveInto($this->record);
 		
-		$controller = $this->getToplevelController();
-		 // Force a content refresh
-		$controller->getRequest()->addHeader('X-Pjax', 'Content');
-		//redirect back to admin section
-		$backLink = $this->getBacklink();
-		return $controller->redirect($backLink, 302); 
+		// Validate the record
+		$result = $this->record->validate();
+		if (!$result->valid()) {
+			// Validation failed, return form with error message
+			$form->sessionMessage($result->message(), 'bad');
+			return $this->edit($this->getRequest());
+		}
+		else {
+			$this->record->DateSent = SS_Datetime::now()->Rfc2822();
+			$this->record->write();
+			$this->record->sendInvitation();
+
+			// Force a content refresh
+			$this->getRequest()->addHeader('X-Pjax', 'Content');
+			// redirect back to admin section
+			$backLink = $this->getBacklink();
+			$controller = $this->getToplevelController();
+			return $controller->redirect($backLink, 302);
+		}
+		
+
 	} 
 }

@@ -222,7 +222,7 @@ class MemberInvitation extends DataObject
                 );
                 return $valid;
             }
-            if ($invite = self::get()->filter('Email', $this->Email)->first()) {
+            if (self::get()->filter('Email', $this->Email)->first()) {
                 $valid->error(
                     _t('MemberInvitation.INVITE_EXISTS', 'An invitation with this e-mail already exists.')
                 );
@@ -232,6 +232,9 @@ class MemberInvitation extends DataObject
     }
     public function sendInvitation()
     {
+        // Enable theme for email templates
+        Config::inst()->update('SSViewer', 'theme_enabled', true);
+        
         if($subsiteID = $this->SubsiteID) {
             $subsite = Subsite::get()->byID($subsiteID);
             $siteURL = 'http://'.$subsite->getPrimarySubsiteDomain()->Domain.'/';
@@ -241,8 +244,9 @@ class MemberInvitation extends DataObject
         }
         else {
             $siteURL = Director::absoluteBaseURL();
-        }       
-        return Email::create()
+        }
+        
+        $result = Email::create()
             ->setFrom($this->FromEmail)
             ->setTo($this->Email)
             ->setSubject($this->EmailSubject)
@@ -260,6 +264,11 @@ class MemberInvitation extends DataObject
                 )
             )
             ->send();
+            
+        // Disable theme after sending
+        Config::inst()->update('SSViewer', 'theme_enabled', false);
+        
+        return $result;
     }
     public function generateTempHash() {
         $generator = new RandomGenerator();
